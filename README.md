@@ -7,4 +7,3 @@ I will use this repo to learn the best practices to create production-ready RAG 
 - [ ] Practice clean code 
 - [ ] Using docker
 - [ ] Using Qdrant as vector database
-- [ ] 
