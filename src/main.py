@@ -5,8 +5,6 @@ from contextlib import asynccontextmanager
 
 from helpers.config import get_settings
 
-app = FastAPI()
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
@@ -17,5 +15,6 @@ async def lifespan(app: FastAPI):
     yield
     app.mongo_connection.close()
     
+app = FastAPI(lifespan=lifespan)
 app.include_router(base.base_router)
 app.include_router(data.data_router)

@@ -19,6 +19,7 @@ class DataController(BaseController):
         if file.size > self.app_settings.FILE_MAX_SIZE * self.size_scale:
             return False, ResponseSignal.FILE_SIZE_EXCEEDED.value
         return True, ResponseSignal.FILE_VALIDATED_SUCCESS.value
+    
     def generate_unique_filepath(self, original_filename: str, project_id: str):
         random_key = self.generate_random_string()
         project_path = ProjectController().get_project_path(project_id=project_id)
