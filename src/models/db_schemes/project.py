@@ -15,3 +15,12 @@ class Project(BaseModel):
     class Config:
         arbitrary_types_allowed = True  # To allow Object id type
         validate_by_name = True  # To allow using 'id' instead of '_id'
+
+    @classmethod
+    def get_indexes(cls):
+        return [{
+            "key": [("project_id", 1)],
+            "name": "project_id_index_1",
+            "unique": True
+        }
+        ]

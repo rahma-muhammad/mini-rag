@@ -1,11 +1,31 @@
 from .BaseDataModel import BaseDataModel
 from .db_schemes import Project
 from .enums.DatabaseEnum import DatabaseEnum
+from motor.motor_asyncio import AsyncIOMotorClient
 
 class ProjectModel(BaseDataModel):
-    def __init__(self, db_client):
+    def __init__(self, db_client: object):
         super().__init__(db_client=db_client)
         self.collection = self.db_client[DatabaseEnum.PROJECTS_COLLECTION.value]
+    
+    @classmethod
+    async def create_instance(cls, db_client: AsyncIOMotorClient):
+        instance = cls(db_client=db_client)
+        await instance.init_collection()
+        return instance 
+
+    async def init_collection(self):
+        # Only run this if the collection does not exist yet
+        collection_names = await self.db_client.list_collection_names()
+        if DatabaseEnum.PROJECTS_COLLECTION.value not in collection_names:
+            self.collection = self.db_client[DatabaseEnum.PROJECTS_COLLECTION.value]
+            indexes = Project.get_indexes()
+            for index in indexes:
+                await self.collection.create_index(
+                    index['key'],
+                    name=index['name'],
+                    unique=index['unique']
+                )
 
     async def create_project(self, project: Project):
         record = await self.collection.insert_one(project.dict(by_alias=True, exclude_unset=True))
@@ -18,7 +38,7 @@ class ProjectModel(BaseDataModel):
         })
         if record is None:
             return await self.create_project(
-                project_id=project_id
+                project=Project(project_id=project_id)
             )
         return Project(**record)
     

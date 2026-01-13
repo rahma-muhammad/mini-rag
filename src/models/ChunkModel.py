@@ -1,13 +1,33 @@
 from .BaseDataModel import BaseDataModel
 from .db_schemes import DataChunk
 from .enums.DatabaseEnum import DatabaseEnum
+from motor.motor_asyncio import AsyncIOMotorClient
 from bson.objectid import ObjectId
 from pymongo import InsertOne
 
 class ChunkModel(BaseDataModel):
-    def __init__(self, db_client):
+    def __init__(self, db_client: AsyncIOMotorClient):
         super().__init__(db_client=db_client)
         self.collection = self.db_client[DatabaseEnum.CHUNKS_COLLECTION.value]
+
+    @classmethod
+    async def create_instance(cls, db_client: AsyncIOMotorClient):
+        instance = cls(db_client=db_client)
+        await instance.init_collection()
+        return instance 
+
+    async def init_collection(self):
+        # Only run this if the collection does not exist yet
+        collection_names = await self.db_client.list_collection_names()
+        if DatabaseEnum.CHUNKS_COLLECTION.value not in collection_names:
+            self.collection = self.db_client[DatabaseEnum.CHUNKS_COLLECTION.value]
+            indexes = DataChunk.get_indexes()
+            for index in indexes:
+                await self.collection.create_index(
+                    index['key'],
+                    name=index['name'],
+                    unique=index['unique']
+                )
 
     async def create_chunk(self, chunk: DataChunk):
         record = await self.collection.insert_one(chunk.dict(by_alias=True, exclude_unset=True))
