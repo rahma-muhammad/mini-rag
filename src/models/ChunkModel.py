@@ -56,6 +56,6 @@ class ChunkModel(BaseDataModel):
     
     async def delete_chunks_by_project_id(self, project_id: ObjectId):
         deleted = await self.collection.delete_many({
-            "chunk_project_id": str(project_id)
+            "chunk_project_id": project_id
         })
         return deleted.deleted_count

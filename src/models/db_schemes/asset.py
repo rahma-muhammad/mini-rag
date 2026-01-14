@@ -7,7 +7,7 @@ class Asset(BaseModel):
     id: Optional[ObjectId] = Field(None, alias="_id")
     asset_project_id: str = Field(..., min_length=1)
     asset_type: str = Field(..., min_length=1)
-    asset_id:  str = Field(..., min_length=1)
+    asset_name:  str = Field(..., min_length=1)
     asset_size: int = Field(..., ge=0)
     asset_config: dict = Field(default=None)
     asset_created_at: Optional[datetime] = Field(default=datetime.now(timezone.utc))
@@ -26,9 +26,9 @@ class Asset(BaseModel):
         {
             "key": [
                 ("asset_project_id", 1),
-                ("asset_id", 1)
+                ("asset_name", 1)
                 ],
-            "name": "asset_project_id_asset_id_index_1",
+            "name": "asset_project_id_asset_name_index_1",
             "unique": True
         }
         ]
