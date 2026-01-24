@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     GENERATION_DEFAULT_MAX_TOKENS: int
     GENERATION_DEFAULT_TEMPERATURE: float
 
+    VECTORDB_PROVIDER: str
+    VECTORDB_DIR_PATH: str
+    VECTORDB_DISTANCE_METRIC: str
+
     class Config:
         env_file = ".env"
 
