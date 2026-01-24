@@ -1,4 +1,5 @@
 from ..LLMInterface import LLMInterface
+from ..LLMEnums import OpenAIEnums
 import logging
 from openai import OpenAI
 
@@ -33,11 +34,59 @@ class OpenAIProvider(LLMInterface):
         self.embedding_model_id = model_id
         self.embedding_size = embedding_size
 
-    def generate_text(self, prompt: str, max_output_tokens: int, temperature: float = None):
-        pass
+    def process_text(self, text: str):
+        return text[:self.default_max_input_characters].split()
 
-    def embed_text(self, text: str, document_type):
-        pass
+    def generate_text(self, prompt: str, chat_history: list = [], max_output_tokens: int = None, temperature: float = None):
+        if not self.client:
+            self.logger.error("OpenAI client not initialized.")
+            return None
+        
+        if not self.generation_model_id:
+            self.logger.error("Generation model ID not set.")
+            return None
+        
+        max_output_tokens = max_output_tokens if max_output_tokens else self.default_max_generation_tokens
+        temperature = temperature if temperature else self.default_temperature
+
+        response = self.client.chat.completions.create(
+            model=self.generation_model_id,
+            messages=chat_history.append(
+                self.construct_prompt(prompt=prompt, role= OpenAIEnums.USER.value)
+            ),
+            max_tokens=max_output_tokens,
+            temperature=temperature
+        )
+        
+        if not response or "output" not in response or len(response.output) == 0 or "content" not in response.output[0]:
+            self.logger.error("Error in generation response.")
+            return None
+        
+        return response.output[0].content.text
+
+    def embed_text(self, text: str, document_type: str= None):
+        if not self.client:
+            self.logger.error("OpenAI client not initialized.")
+            return None
+        
+        if not self.embedding_model_id:
+            self.logger.error("Embedding model ID not set.")
+            return None
+        
+        response = self.client.embeddings.create(
+            input=text,
+            model=self.embedding_model_id,
+            dimensions= self.embedding_size
+        )
+
+        if not response or 'data' not in response or len(response.data) == 0 or not response.data[0].embedding:
+            self.logger.error("Failed to get embedding from OpenAI.")
+            return None
+        
+        return response.data[0].embedding
 
     def construct_prompt(self, prompt: str, role:str):
-        pass
+        return {
+            "role": role,
+            "content": self.process_text(prompt)
+        }
