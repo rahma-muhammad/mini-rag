@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     app.vectordb_client.connect()
     yield
     app.mongo_connection.close()
-    app.vectordb_client.close()
+    app.vectordb_client.disconnect()
     
 app = FastAPI(lifespan=lifespan)
 app.include_router(base.base_router)
