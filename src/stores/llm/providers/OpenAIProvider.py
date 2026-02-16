@@ -19,7 +19,7 @@ class OpenAIProvider(LLMInterface):
 
         self.client = OpenAI(
             api_key = self.api_key,
-            api_url = self.api_url
+            base_url = self.api_url
         )
         self.generation_model_id = None
         self.embedding_model_id = None
@@ -79,7 +79,7 @@ class OpenAIProvider(LLMInterface):
             dimensions= self.embedding_size
         )
 
-        if not response or 'data' not in response or len(response.data) == 0 or not response.data[0].embedding:
+        if not response or not response.data or not response.data[0].embedding:
             self.logger.error("Failed to get embedding from OpenAI.")
             return None
         
