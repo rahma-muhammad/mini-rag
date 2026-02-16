@@ -2,6 +2,7 @@ from ..VectorDBInterface import VectorDBInterface
 from ..VectorDBEnums import VectorDBEnums, VectorDBDistantMetric
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import PointStruct
+import uuid
 import logging 
 
 class QdrantDBProvider(VectorDBInterface):
@@ -74,6 +75,7 @@ class QdrantDBProvider(VectorDBInterface):
                 collection_name=collection_name,
                 points=[
                     PointStruct(
+                        id=str(uuid.uuid4()),
                         vector=vector, 
                         payload={"text": text, "metadata": metadata})
                 ],
@@ -100,6 +102,7 @@ class QdrantDBProvider(VectorDBInterface):
 
             batch_records = [
                     PointStruct(
+                        id=str(uuid.uuid4()),
                         vector=batch_vectors[x], 
                         payload={"text": batch_texts[x], "metadata": batch_metadatas[x]})
                 for x in range(len(batch_texts))
