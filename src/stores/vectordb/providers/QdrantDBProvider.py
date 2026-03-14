@@ -128,4 +128,4 @@ class QdrantDBProvider(VectorDBInterface):
             collection_name=collection_name,
             query=query_vector,
             limit=limit,
-        )
+        ).points
