@@ -134,7 +134,8 @@ async def search_project(request: Request, project_id: str, search_request: Sear
     
     nlp_controller = NLPController(
         embedding_client = request.app.embedding_client,
-        vectordb_client = request.app.vectordb_client
+        vectordb_client = request.app.vectordb_client,
+        generation_client = request.app.generation_client
     )
 
     results = nlp_controller.search_from_vector_db(
