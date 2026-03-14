@@ -2,7 +2,7 @@ from enum import Enum
 
 class LLMEnums(Enum):
     OPENAI = "OPENAI"
-    OLLAMA = "OLLAMA"
+    FASTEMBED = "FASTEMBED"
 
 class OpenAIEnums(Enum):
     SYSTEM = "system"
