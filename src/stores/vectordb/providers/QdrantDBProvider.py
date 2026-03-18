@@ -1,7 +1,9 @@
 from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnums import VectorDBEnums, VectorDBDistantMetric
+from ..VectorDBEnums import VectorDBDistantMetric
+from models.NLPModel import RetrievedDocument
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import PointStruct
+from typing import List
 import uuid
 import logging 
 
@@ -119,13 +121,24 @@ class QdrantDBProvider(VectorDBInterface):
         
         return True
     
-    def search_vector(self, collection_name: str, query_vector: list, limit: int):
+    def search_vector(self, collection_name: str, query_vector: list, limit: int) -> List[RetrievedDocument]:
         if not self.collection_exists(collection_name):
             self.logger.error(f"Can not insert new record to non-existed collection: {collection_name}")
             return None
         
-        return self.client.query_points(
+        results = self.client.query_points(
             collection_name=collection_name,
             query=query_vector,
             limit=limit,
         ).points
+
+        if not results or len(results) == 0:
+            return None
+        
+        return [
+            RetrievedDocument(**{
+                "text": result.payload['text'],
+                "score": result.score
+            })
+            for result in results
+        ]

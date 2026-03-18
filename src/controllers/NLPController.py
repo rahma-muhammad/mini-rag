@@ -76,7 +76,5 @@ class NLPController(BaseController):
             limit= limit
         )
 
-        return json.loads(
-            json.dumps(results, default=lambda x: x.__dict__)
-        )
+        return results
 

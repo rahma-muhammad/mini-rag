@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from models.NLPModel import RetrievedDocument
+from typing import List
 
 class VectorDBInterface(ABC):
 
@@ -39,5 +41,5 @@ class VectorDBInterface(ABC):
         pass
 
     @abstractmethod
-    def search_vector(self, collection_name: str, query_vector: list, limit: int):
+    def search_vector(self, collection_name: str, query_vector: list, limit: int)-> List[RetrievedDocument]:
         pass

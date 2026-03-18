@@ -154,6 +154,6 @@ async def search_project(request: Request, project_id: str, search_request: Sear
     return JSONResponse(
         content={
             "signal": ResponseSignal.SUCCESS_SEARCHING_VECTOR_DB.value,
-            "results": results
+            "results": [result.dict() for result in results]
         }
     )
