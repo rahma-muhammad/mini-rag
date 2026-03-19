@@ -6,11 +6,12 @@ from typing import List
 import json
 
 class NLPController(BaseController):
-    def __init__(self, vectordb_client, embedding_client, generation_client):
+    def __init__(self, vectordb_client, embedding_client, generation_client, template_parser):
         super().__init__()
         self.vectordb_client = vectordb_client
         self.embedding_client = embedding_client
         self.generation_client = generation_client
+        self.template_parser = template_parser
 
     def create_collection_name(self, project_id: str):
         return f"collection_{project_id}".strip()
@@ -78,3 +79,42 @@ class NLPController(BaseController):
 
         return results
 
+    def answer_rag_question(self, project: Project, query: str, limit: int= 5):
+        answer, full_prompt, history = None, None, None
+        # 1 retrieve documents
+        retrieved_documents = self.search_from_vector_db(
+            project=project,
+            query= query,
+            limit=limit
+        )
+        if not retrieved_documents or len(retrieved_documents)==0:
+            return answer, full_prompt, history
+        
+        # 2 make a prompt
+        system_prompt = self.template_parser.get("rag", "system_prompt", {})
+        document_prompt = "\n".join([
+            self.template_parser.get("rag", "document_prompt", {
+                "doc_number": idx,
+                "doc_text": doc.text
+            })
+            for idx, doc in enumerate(retrieved_documents)
+        ])
+
+        footer_prompt = self.template_parser.get("rag", "footer_prompt", {
+            "query": query
+        })
+
+        history = [self.generation_client.construct_prompt(
+            prompt = system_prompt,
+            role = self.generation_client.enums.ASSISTANT.value
+        )]
+
+        full_prompt = "\n\n".join([document_prompt, footer_prompt])
+
+        # 3 invoke the LLM
+        answer = self.generation_client.generate_text(
+            prompt= full_prompt, 
+            chat_history= history
+        )
+
+        return answer, full_prompt, history

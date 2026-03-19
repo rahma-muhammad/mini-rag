@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     VECTORDB_DIR_PATH: str
     VECTORDB_DISTANCE_METRIC: str
 
+    USED_LANGUAGE: str
+    DEFAULT_LANGUAGE: str
+
     class Config:
         env_file = ".env"
 
