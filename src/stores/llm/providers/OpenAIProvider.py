@@ -19,12 +19,13 @@ class OpenAIProvider(LLMInterface):
 
         self.client = OpenAI(
             api_key = self.api_key,
-            base_url = self.api_url
+            base_url = self.api_url if self.api_url and len(self.api_url)!= 0 else None
         )
         self.generation_model_id = None
         self.embedding_model_id = None
         self.embedding_size = None
 
+        self.enums = OpenAIEnums
         self.logger = logging.getLogger(__name__)
 
     def set_generation_model(self, model_id: str):
@@ -35,7 +36,7 @@ class OpenAIProvider(LLMInterface):
         self.embedding_size = embedding_size
 
     def process_text(self, text: str):
-        return text[:self.default_max_input_characters].split()
+        return text[:self.default_max_input_characters].strip()
 
     def generate_text(self, prompt: str, chat_history: list = [], max_output_tokens: int = None, temperature: float = None):
         if not self.client:
@@ -49,20 +50,20 @@ class OpenAIProvider(LLMInterface):
         max_output_tokens = max_output_tokens if max_output_tokens else self.default_max_generation_tokens
         temperature = temperature if temperature else self.default_temperature
 
+        chat_history.append(
+            self.construct_prompt(prompt=prompt, role=self.enums.USER.value)
+        )
         response = self.client.chat.completions.create(
             model=self.generation_model_id,
-            messages=chat_history.append(
-                self.construct_prompt(prompt=prompt, role= OpenAIEnums.USER.value)
-            ),
+            messages=chat_history,
             max_tokens=max_output_tokens,
             temperature=temperature
         )
         
-        if not response or "output" not in response or len(response.output) == 0 or "content" not in response.output[0]:
+        if not response or len(response.choices) == 0:
             self.logger.error("Error in generation response.")
             return None
-        
-        return response.output[0].content.text
+        return response.choices[0].message.content
 
     def embed_text(self, text: str, document_type: str= None):
         if not self.client:
