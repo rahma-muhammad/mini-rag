@@ -15,8 +15,21 @@ services:
     
     restart: always
 
+  postgresdb:
+    image: pgvector/pgvector:pg17
+    container_name: pgvector-db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mini_rag_app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      
 networks:
   backend:
 
 volumes:
   mongodb:
+  pgdata:
