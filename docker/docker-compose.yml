@@ -15,17 +15,18 @@ services:
     
     restart: always
 
-  postgresdb:
+  pgvector:
     image: pgvector/pgvector:pg17
-    container_name: pgvector-db
+    container_name: pgvector
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: mini_rag_app
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: always
       
 networks:
   backend:
