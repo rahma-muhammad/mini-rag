@@ -29,7 +29,7 @@ class AssetModel(BaseDataModel):
                 )
     async def create_asset(self, asset: Asset):
         record = await self.collection.insert_one(asset.dict(by_alias=True, exclude_unset=True))
-        asset.id = record.inserted_id
+        asset.asset_id = record.inserted_id
         return asset
     
     async def get_project_assets(self, asset_project_id: str, assset_file_type: str):

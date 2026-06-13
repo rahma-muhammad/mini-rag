@@ -1,9 +1,10 @@
-from sqlalchemy.orm import DeclarativeBase, relationship
+from .minirag_base import Base
+from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, func, Index
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 import uuid
 
-class Asset(DeclarativeBase):
+class Asset(Base):
     __tablename__ = "assets"
 
     asset_id = Column(Integer, primary_key=True, autoincrement=True)
