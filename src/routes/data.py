@@ -55,10 +55,11 @@ async def upload_data(request: Request, project_id: int, file: UploadFile, app_s
         )
     asset_model = await AssetModel.create_instance(db_client=request.app.db_client)
     asset_record = Asset(
-        asset_project_id=str(project.project_id),
+        asset_project_id=project.project_id,
         asset_type= AssetTypeEnum.FILE.value,
         asset_name=file_id,
-        asset_size=os.path.getsize(file_path)
+        asset_size=os.path.getsize(file_path),
+        asset_config={}
     )
     inserted_asset = await asset_model.create_asset(
         asset=asset_record
@@ -89,7 +90,7 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     file_id_list = {}
     if process_request.file_id:
         asset_id = await asset_model.get_asset_id(
-            asset_project_id=str(project.project_id),
+            asset_project_id=project.project_id,
             asset_name=process_request.file_id
         )
         file_id_list = {
@@ -98,8 +99,8 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
     else:
         
         project_assets = await asset_model.get_project_assets(
-            asset_project_id=str(project.project_id),
-            assset_file_type=AssetTypeEnum.FILE.value
+            asset_project_id=project.project_id,
+            asset_file_type=AssetTypeEnum.FILE.value
         )
         if not project_assets:
             return JSONResponse(
@@ -109,7 +110,7 @@ async def process_endpoint(request: Request, project_id: int, process_request: P
                 }
             )
         file_id_list = {
-            asset.asset_project_id : asset.asset_name
+            asset.asset_id : asset.asset_name
             for asset in project_assets
         }
 
