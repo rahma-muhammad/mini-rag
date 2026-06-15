@@ -4,66 +4,57 @@ from .enums.DatabaseEnum import DatabaseEnum
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson.objectid import ObjectId
 from pymongo import InsertOne
+from sqlalchemy.future import select
+from sqlalchemy import func, delete
 
 class ChunkModel(BaseDataModel):
     def __init__(self, db_client: AsyncIOMotorClient):
         super().__init__(db_client=db_client)
-        self.collection = self.db_client[DatabaseEnum.CHUNKS_COLLECTION.value]
+        self.db_client = self.db_client
 
     @classmethod
     async def create_instance(cls, db_client: AsyncIOMotorClient):
         instance = cls(db_client=db_client)
-        await instance.init_collection()
         return instance 
 
-    async def init_collection(self):
-        # Only run this if the collection does not exist yet
-        collection_names = await self.db_client.list_collection_names()
-        if DatabaseEnum.CHUNKS_COLLECTION.value not in collection_names:
-            self.collection = self.db_client[DatabaseEnum.CHUNKS_COLLECTION.value]
-            indexes = DataChunk.get_indexes()
-            for index in indexes:
-                await self.collection.create_index(
-                    index['key'],
-                    name=index['name'],
-                    unique=index['unique']
-                )
-
     async def create_chunk(self, chunk: DataChunk):
-        record = await self.collection.insert_one(chunk.dict(by_alias=True, exclude_unset=True))
-        chunk.chunk_id = record.inserted_id
+        async with self.db_client() as session:
+            async with session.begin():
+                session.add(chunk)
+            await session.commit()
+            await session.refresh(chunk)
         return chunk
     
     async def get_chunk(self,chunk_id: str):
-        record = self.collection.find_one({
-            "_id": ObjectId(chunk_id)
-        })
-        if record is None:
-            return None
-        return DataChunk(**record)
+        async with self.db_client() as session:
+            async with session.begin():
+                query = select(DataChunk).where(DataChunk.chunk_id == chunk_id)
+                chunk = (await session.execute(query)).scalar_one_or_none()
+        return chunk
     
     async def insert_many_chunks(self, chunks: list[DataChunk], batch_size: int =100):
-        for i in range(0, len(chunks), batch_size):
-            batch = chunks[i: i+batch_size]
 
-            operations = [
-                InsertOne(item.dict(by_alias=True, exclude_unset=True))
-                for item in batch
-            ]
-            inserted = await self.collection.bulk_write(operations)
-
+        async with self.db_client() as session:
+            async with session.begin():
+                for i in range(0, len(chunks), batch_size):
+                    batch = chunks[i:i+batch_size]
+                    session.add_all(batch)
+            await session.commit()
         return len(chunks)
     
     async def delete_chunks_by_project_id(self, project_id: ObjectId):
-        deleted = await self.collection.delete_many({
-            "chunk_project_id": project_id
-        })
-        return deleted.deleted_count
+        async with self.db_client() as session:
+            async with session.begin():
+                query = delete(DataChunk).where(DataChunk.chunk_project_id == project_id)
+                result = await session.execute(query)
+            await session.commit()
+        return result.rowcount
 
     async def get_chunks_by_project_id(self, project_id: ObjectId, page_number: int = 1, page_size: int = 100):
         skip = (page_number - 1) * page_size
-        cursor = self.collection.find({
-            "chunk_project_id": project_id
-        }).skip(skip).limit(page_size)
-        records = await cursor.to_list(length=None)
-        return [DataChunk(**record) for record in records]
+        async with self.db_client() as session:
+            async with session.begin():
+                stmt = select(DataChunk).where(DataChunk.chunk_project_id == project_id).offset(skip).limit(page_size)
+                result = await session.execute(stmt)
+                records = result.scalars().all()
+        return records
