@@ -16,8 +16,8 @@ class DataChunk(Base):
     chunk_project_id = Column(Integer, ForeignKey("projects.project_id"), nullable=False)
     chunk_asset_id = Column(Integer, ForeignKey("assets.asset_id"), nullable=False)
 
-    project = relationship("Project", back_populates="data_chunks")
-    asset = relationship("Asset", back_populates="data_chunks")
+    project = relationship("Project", back_populates="chunks")
+    asset = relationship("Asset", back_populates="chunks")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
