@@ -63,10 +63,13 @@ async def index_project(request: Request, project_id: int, push_request: PushReq
         template_parser=request.app.template_parser
     )
 
+    chunks_ids =  [ c.chunk_id for c in data_chunks ]
+
     try:
         _ = nlp_controller.index_into_vector_db(
             project= project, 
             data_chunks= data_chunks, 
+            chunks_ids= chunks_ids,
             do_reset= push_request.do_reset
         )
     except Exception as e:

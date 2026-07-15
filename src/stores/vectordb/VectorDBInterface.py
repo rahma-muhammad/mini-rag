@@ -33,11 +33,11 @@ class VectorDBInterface(ABC):
         pass
 
     @abstractmethod
-    def insert_vector(self, collection_name: str, vector: list, text: str, metadata: dict=None):
+    def insert_vector(self, collection_name: str, vector: list, text: str, metadata: dict=None, record_id: str = None):
         pass
 
     @abstractmethod
-    def insert_vectors(self, collection_name: str, vectors: list, texts: list, metadatas: list=None, batch_size: int=100):
+    def insert_vectors(self, collection_name: str, vectors: list, texts: list, metadatas: list=None,record_ids: list = None, batch_size: int=100):
         pass
 
     @abstractmethod
