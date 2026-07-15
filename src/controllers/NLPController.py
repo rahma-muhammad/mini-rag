@@ -1,6 +1,6 @@
 from .BaseController import BaseController
 from stores.llm.LLMEnums import DocumentTypeEnum
-from stores.vectordb.VectorDBEnums import VectorDBDistantMetric
+from stores.vectordb.VectorDBEnums import VectorDBDistanceMetric
 from models.db_schemes import Project, DataChunk, Asset
 from typing import List
 import json
@@ -27,7 +27,7 @@ class NLPController(BaseController):
             json.dumps(collection_info, default=lambda x: x.__dict__)
         )
     
-    def index_into_vector_db(self, project: Project, data_chunks: List[DataChunk], do_reset: int = 0):
+    def index_into_vector_db(self, project: Project, data_chunks: List[DataChunk], chunks_ids: List[int], do_reset: int = 0):
         # step1: get collection name
         collection_name = self.create_collection_name(project_id=project.project_id)
 
@@ -44,7 +44,7 @@ class NLPController(BaseController):
         _ = self.vectordb_client.create_collection(
             collection_name=collection_name,
             embedding_size=self.embedding_client.embedding_size,
-            distance_metric=VectorDBDistantMetric.COSINE.value,
+            distance_metric=VectorDBDistanceMetric.COSINE.value,
             do_reset=do_reset,
         )
 
@@ -54,7 +54,8 @@ class NLPController(BaseController):
             collection_name=collection_name, 
             vectors= vectors,
             texts=texts,
-            metadatas=metadata
+            metadatas=metadata,
+            record_ids=chunks_ids,
         )
 
         return True
