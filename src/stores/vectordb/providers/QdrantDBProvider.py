@@ -1,5 +1,5 @@
 from ..VectorDBInterface import VectorDBInterface
-from ..VectorDBEnums import VectorDBDistantMetric
+from ..VectorDBEnums import VectorDBDistanceMetric
 from models.NLPModel import RetrievedDocument
 from qdrant_client import QdrantClient, models
 from qdrant_client.models import PointStruct
@@ -46,10 +46,10 @@ class QdrantDBProvider(VectorDBInterface):
             distance_metric: str,
             do_reset: bool= False):
         
-        if distance_metric == VectorDBDistantMetric.COSINE.value:
+        if distance_metric == VectorDBDistanceMetric.COSINE.value:
             distance_metric = models.Distance.COSINE
 
-        elif distance_metric == VectorDBDistantMetric.DOT.value:
+        elif distance_metric == VectorDBDistanceMetric.DOT.value:
             distance_metric = models.Distance.DOT
         else:
             distance_metric = models.Distance.COSINE   # default for now
@@ -68,7 +68,7 @@ class QdrantDBProvider(VectorDBInterface):
         
         return False
     
-    def insert_vector(self, collection_name: str, vector: list, text: str, metadata: dict=None):
+    def insert_vector(self, collection_name: str, vector: list, text: str, metadata: dict=None, record_id: str = None):
         if not self.collection_exists(collection_name):
             self.logger.error(f"Can not insert new record to non-existed collection: {collection_name}")
             return False
@@ -77,7 +77,7 @@ class QdrantDBProvider(VectorDBInterface):
                 collection_name=collection_name,
                 points=[
                     PointStruct(
-                        id=str(uuid.uuid4()),
+                        id=record_id,
                         vector=vector, 
                         payload={"text": text, "metadata": metadata})
                 ],
@@ -88,7 +88,7 @@ class QdrantDBProvider(VectorDBInterface):
         
         return True
         
-    def insert_vectors(self, collection_name: str, vectors: list, texts: list, metadatas: list=None, batch_size: int=100):
+    def insert_vectors(self, collection_name: str, vectors: list, texts: list, metadatas: list=None,record_ids: list = None, batch_size: int=100):
         if not self.collection_exists(collection_name):
             self.logger.error(f"Can not insert new records to non-existed collection: {collection_name}")
             return False
@@ -96,15 +96,19 @@ class QdrantDBProvider(VectorDBInterface):
         if metadatas == None:
             metadatas = [None] * len(texts)
 
+        if record_ids is None:
+            record_ids = list(range(0, len(texts)))
+
         for i in range(0, len(texts), batch_size):
             batch_end = i + batch_size
             batch_vectors = vectors[i: batch_end]
             batch_texts = texts[i: batch_end]
             batch_metadatas = metadatas[i: batch_end]
+            batch_record_ids = record_ids[i:batch_end]
 
             batch_records = [
                     PointStruct(
-                        id=str(uuid.uuid4()),
+                        id=batch_record_ids[x],
                         vector=batch_vectors[x], 
                         payload={"text": batch_texts[x], "metadata": batch_metadatas[x]})
                 for x in range(len(batch_texts))
