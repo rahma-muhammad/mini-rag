@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List
 
 class Settings(BaseSettings):
     APP_NAME: str
@@ -18,23 +19,24 @@ class Settings(BaseSettings):
     GENERATION_PROVIDER: str
     EMBEDDING_PROVIDER: str
 
-    OPENAI_API_KEY: str
-    OPENAI_API_URL: str
+    OPENAI_API_KEY: str = None
+    OPENAI_API_URL: str = None
 
-    GENERATION_MODEL_ID: str
-    EMBEDDING_MODEL_ID: str
-    EMBEDDING_SIZE: int
+    GENERATION_MODEL_ID: str = None
+    EMBEDDING_MODEL_ID: str = None
+    EMBEDDING_SIZE: int = None
 
-    INPUT_DEFAULT_MAX_CHARACTERS: int
-    GENERATION_DEFAULT_MAX_TOKENS: int
-    GENERATION_DEFAULT_TEMPERATURE: float
+    INPUT_DEFAULT_MAX_CHARACTERS: int = None
+    GENERATION_DEFAULT_MAX_TOKENS: int = None
+    GENERATION_DEFAULT_TEMPERATURE: float = None
 
+    VECTORDB_PROVIDER_LITERAL: List[str] = None
     VECTORDB_PROVIDER: str
     VECTORDB_DIR_PATH: str
-    VECTORDB_DISTANCE_METRIC: str
+    VECTORDB_DISTANCE_METRIC: str = None
 
-    USED_LANGUAGE: str
-    DEFAULT_LANGUAGE: str
+    USED_LANGUAGE: str = "en"
+    DEFAULT_LANGUAGE: str = "en"
 
     class Config:
         env_file = ".env"
