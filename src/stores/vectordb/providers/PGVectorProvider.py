@@ -169,6 +169,7 @@ class PGVectorProvider(VectorDBInterface):
                     'VALUES (:text, :vector, :metadata, :chunk_id)')
 
                     await session.execute(batch_insert_sql, values)
+                    await session.commit()
         return True
     
 
