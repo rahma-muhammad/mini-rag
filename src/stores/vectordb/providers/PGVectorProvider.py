@@ -8,13 +8,14 @@ from sqlalchemy.sql import text as sql_text
 
 class PGVectorProvider(VectorDBInterface):
 
-    def __init__(self, db_client, default_vector_size: int = 384, 
-    distance_method: str=None):
+    def __init__(self, db_client, default_vector_size: int = 384, distance_method: str=None, index_threshold: int=100):
         self.db_client = db_client
         self.default_vector_size = default_vector_size
         self.distance_method = distance_method 
+        self.index_threshold = index_threshold
         self.pgvector_table_prefix = PgVectorTableSchemaEnums.TABLE_PREFIX.value
         self.logger = logging.getLogger("uvicorn")
+        self.default_index_name = lambda collection_name: f"{collection_name} "
 
     async def connect(self):
         # Activate vector extention on first time if not found
@@ -34,9 +35,10 @@ class PGVectorProvider(VectorDBInterface):
                 results = await session.execute(list_tbl, {"collection_name": collection_name})
                 record = results.scalar_one_or_none()
 
-        return None
+        return record
 
-    async def list_collections(self):
+    async def list_collections(self) -> List:
+        records =[]
         async with self.db_client() as session:
             async with session.begin():
                 list_tables = sql_text("SELECT tablename FROM pg_tables WHERE tablename LIKE :prefix")
@@ -64,7 +66,7 @@ class PGVectorProvider(VectorDBInterface):
                     return None
                 
                 return {
-                    "table_data": dict(table_data),
+                    "table_info": dict(table_data),
                     "record_count": record_count.scalar_one()
                 }
             
@@ -74,7 +76,7 @@ class PGVectorProvider(VectorDBInterface):
                 self.logger.info(f"Deleting collection: {collection_name}")
                 drop_table_sql = sql_text('DROP TABLE IF EXISTS :collection_name')
                 await session.execute(drop_table_sql, {"collection_name": collection_name})
-            await session.commit()
+                await session.commit()
 
         return True
 
@@ -103,7 +105,49 @@ class PGVectorProvider(VectorDBInterface):
             return True
         
         return False
+    async def is_index_exists(self, collection_name: str) -> bool:
+        index_name = self.default_index_name(collection_name)
+        async with self.db_client() as session:
+            async with session.begin():
+                check_index_sql = sql_text("""
+                SELECT 1 
+                FROM pg_indexes 
+                WHERE tablename = :collection_name
+                AND indexname = :index_name
+                """)
+                result = await session.execute(check_index_sql, {
+                    "collection_name": collection_name, 
+                    "index_name": index_name
+                    })
+        
+        return bool(result.scalar_one_or_none())
     
+    async def create_vector_index(self, collection_name: str, index_type: str = PgVectorIndexTypeEnums.HNSW.value):
+        is_index_exists = await self.is_index_exists(collection_name=collection_name)
+        if is_index_exists:
+            self.logger.info(f"Index already exists for collection: {collection_name}")
+            return False
+        
+        async with self.db_client() as session:
+            async with session.begin():
+                count_sql = sql_text("""
+                SELECT COUNT(*) FROM :collection_name
+                """)
+                result = await session.execute(count_sql, {"collection_name": collection_name})
+                records_count = result.scaler_one()
+                if records_count < self.index_threshold:
+                    return False
+                self.logger.info(f"START: Creating vector index for collection: {collection_name}")
+
+                index_name = self.default_index_name(collection_name)
+                create_idx_sql = sql_text(
+                    f'CREATE INDEX {index_name} ON {collection_name} USING {index_type} ({PgVectorTableSchemaEnums.VECTOR.value} {self.distance_method})'
+                )
+                session.execute(create_idx_sql)
+                self.logger.info(f"END: Created vector index for collection: {collection_name}")
+            await session.commit()
+            return True
+
     async def insert_vector(self, collection_name: str, vector: list, text: str, record_id: str = None, metadata: dict=None):
         is_collection_exists = await self.collection_exists(collection_name=collection_name)
 
@@ -127,7 +171,7 @@ class PGVectorProvider(VectorDBInterface):
                     "metadata": metadata,
                     "chunk_id": record_id
                 })
-                await session.commit()
+            await session.commit()
 
         return True
     
@@ -169,7 +213,7 @@ class PGVectorProvider(VectorDBInterface):
                     'VALUES (:text, :vector, :metadata, :chunk_id)')
 
                     await session.execute(batch_insert_sql, values)
-                    await session.commit()
+            await session.commit()
         return True
     
 

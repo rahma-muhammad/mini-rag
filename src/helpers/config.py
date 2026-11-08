@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     VECTORDB_PROVIDER: str
     VECTORDB_DIR_PATH: str
     VECTORDB_DISTANCE_METRIC: str = None
+    VECTORDB_PGVEC_INDEX_THRESHOLD: int = 100
 
     USED_LANGUAGE: str = "en"
     DEFAULT_LANGUAGE: str = "en"
